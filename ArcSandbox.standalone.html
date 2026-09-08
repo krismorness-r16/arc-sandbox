@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interaction Arc Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&amp;family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+<style>
+/* ─── tokens: light is the base, both dark states redefine only these ─────── */
+:root {
+  --ground:      #f4f5f7;
+  --surface:     #ffffff;
+  --surface-sunk:#eceef2;
+  --ink:         #171a21;
+  --ink-mid:     #4a5361;
+  --ink-soft:    #6b7484;
+  --hairline:    #dbdfe6;
+  --hairline-str:#c3c9d3;
+
+  --accent:      #9c5f0d;
+  --accent-lit:  #b87413;
+  --accent-wash: #f6ecdb;
+
+  --shadow: 0 1px 2px rgb(23 26 33 / .05), 0 4px 14px -6px rgb(23 26 33 / .10);
+
+  --measure: 72ch;
+  --step--1: .8125rem;
+  --step-0:  1rem;
+  --step-1:  1.1875rem;
+  --step-3:  2rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #10131a;
+    --surface:     #171b24;
+    --surface-sunk:#0c0f15;
+    --ink:         #e7eaf0;
+    --ink-mid:     #a8b1c0;
+    --ink-soft:    #818996;
+    --hairline:    #262c38;
+    --hairline-str:#39414f;
+
+    --accent:      #e8a33d;
+    --accent-lit:  #f0b45c;
+    --accent-wash: #2a2013;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px -8px rgb(0 0 0 / .5);
+  }
+}
+:root[data-theme="dark"] {
+  --ground:      #10131a;
+  --surface:     #171b24;
+  --surface-sunk:#0c0f15;
+  --ink:         #e7eaf0;
+  --ink-mid:     #a8b1c0;
+  --ink-soft:    #818996;
+  --hairline:    #262c38;
+  --hairline-str:#39414f;
+
+  --accent:      #e8a33d;
+  --accent-lit:  #f0b45c;
+  --accent-wash: #2a2013;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px -8px rgb(0 0 0 / .5);
+}
+
+/* ─── base ────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  font-feature-settings: "kern";
+}
+h1, h2, h3, h4 {
+  font-family: "Saira Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
+  font-weight: 700;
+  line-height: 1.05;
+  text-wrap: balance;
+  margin: 0;
+  letter-spacing: .005em;
+}
+p { margin: 0; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent-lit); outline-offset: 3px; border-radius: 2px;
+}
+code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .86em;
+  font-variant-ligatures: none;
+  color: var(--ink-mid);
+  overflow-wrap: anywhere;
+}
+
+/* ─── layout ──────────────────────────────────────────────────────────────── */
+.shell { max-width: 1160px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); }
+.col   { max-width: var(--measure); }
+section { padding-block: clamp(2rem, 5vw, 3.5rem); }
+.stack   { display: flex; flex-direction: column; gap: 1.15rem; }
+.stack-l { display: flex; flex-direction: column; gap: 2.25rem; }
+
+.eyebrow {
+  font-family: "Saira Condensed", sans-serif;
+  font-weight: 600; font-size: .8125rem;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex; align-items: center; gap: .6rem;
+}
+.eyebrow::before {
+  content: ""; width: 1.6rem; height: 1px; background: var(--hairline-str); flex: none;
+}
+h1 { font-size: var(--step-3); }
+.lede { font-size: var(--step-1); color: var(--ink-mid); line-height: 1.5; }
+.note { font-size: var(--step--1); color: var(--ink-soft); }
+.keyline {
+  font-family: "JetBrains Mono", monospace; font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.keyline strong { color: var(--accent); font-weight: 500; letter-spacing: .04em; }
+
+/* ─── tables ──────────────────────────────────────────────────────────────── */
+.scroller { overflow-x: auto; border: 1px solid var(--hairline); border-radius: 4px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
+th, td { padding: .62rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--hairline); }
+thead th {
+  font-family: "Saira Condensed", sans-serif; font-weight: 600;
+  font-size: .78rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-soft); background: var(--surface-sunk);
+  border-bottom: 1px solid var(--hairline-str); white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-soft); font-family: "JetBrains Mono", monospace; }
+
+/* ─── live arc demo ───────────────────────────────────────────────────────── */
+.demo { display: grid; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: 4px; overflow: hidden; box-shadow: var(--shadow); }
+@media (min-width: 800px) { .demo { grid-template-columns: 1fr 300px; } }
+.demo > * { background: var(--surface); }
+.demo-stage { padding: 1rem; display: flex; align-items: center; justify-content: center; min-height: 340px; }
+.demo-stage svg { width: 100%; height: auto; max-width: 460px; }
+.demo-ctrl { padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+.demo-ctrl h4 { font-size: var(--step-0); }
+.ctrl { display: flex; flex-direction: column; gap: .3rem; }
+.ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+.ctrl label { font-family: "Saira Condensed", sans-serif; font-weight: 600; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-soft); }
+.ctrl output { font-family: "JetBrains Mono", monospace; font-size: var(--step--1); color: var(--accent); font-variant-numeric: tabular-nums; }
+.ctrl input[type=range] { width: 100%; accent-color: var(--accent); }
+.ctrl .prop { font-family: "JetBrains Mono", monospace; font-size: .7rem; color: var(--ink-soft); }
+.demo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .25rem; }
+.demo-list li {
+  display: flex; align-items: center; gap: .3rem;
+  padding: .28rem .4rem; border-radius: 3px;
+  border: 1px solid var(--hairline); background: var(--surface-sunk);
+  font-family: "Saira Condensed", sans-serif; font-weight: 600; font-size: .84rem;
+}
+.demo-list li.is-spacer { border-style: dashed; color: var(--ink-soft); background: transparent; }
+.demo-list .lbl { flex: 1; }
+.demo-list .hold { font-family: "JetBrains Mono", monospace; font-size: .68rem; color: var(--accent); }
+.demo-list button {
+  cursor: pointer; width: 1.4rem; height: 1.4rem; padding: 0; border-radius: 3px;
+  border: 1px solid var(--hairline-str); background: var(--surface); color: var(--ink-soft);
+  font-family: "JetBrains Mono", monospace; font-size: .7rem; line-height: 1;
+}
+.demo-list button:hover { border-color: var(--accent); color: var(--accent); }
+.demo-add { display: flex; gap: .35rem; }
+.demo-add button {
+  flex: 1; cursor: pointer; padding: .3rem 0; border-radius: 3px;
+  border: 1px dashed var(--hairline-str); background: transparent; color: var(--ink-mid);
+  font-family: "Saira Condensed", sans-serif; font-weight: 600; font-size: .78rem;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.demo-add button:hover { border-color: var(--accent); color: var(--accent); }
+.demo-reset {
+  cursor: pointer; align-self: flex-start; padding: .3rem .7rem; border-radius: 3px;
+  border: 1px solid var(--hairline-str); background: var(--surface); color: var(--ink-mid);
+  font-family: "Saira Condensed", sans-serif; font-weight: 600; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase;
+}
+.demo-reset:hover { border-color: var(--accent); color: var(--accent); }
+.dcap { fill: #ededed; stroke: #3a3a3a; stroke-width: 1.2; }
+.dcap-txt { font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 700; fill: #141414; }
+.dlbl { font-family: "Saira Condensed", sans-serif; font-weight: 600; font-size: 12px; fill: var(--ink); }
+.dring { fill: none; stroke: var(--accent); stroke-width: 2; }
+.dtrack { fill: none; stroke: var(--hairline-str); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.gsub { font-family: "JetBrains Mono", monospace; font-size: 9px; fill: var(--ink-soft); }
+
+footer { border-top: 1px solid var(--hairline); padding-block: 1.5rem 2.5rem; }
+footer .shell { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; font-size: var(--step--1); color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section id="arc-tuning">
+    <div class="stack-l">
+      <div class="stack col">
+        <p class="keyline"><strong><a href="https://r16.atlassian.net/browse/BRIAR-435" target="_blank" rel="noopener noreferrer" style="color:inherit">BRIAR-435</a></strong> · Contextual Interaction System</p>
+        <p class="eyebrow">For design</p>
+        <h1>Where the prompts sit &mdash; try it</h1>
+        <p class="lede">
+          Four values place every prompt. Drag them and watch the arc rebuild; the maths is the same as the
+          shipping layout, including the end-to-end spread and which side the text runs to.
+        </p>
+      </div>
+
+      <div class="demo">
+        <div class="demo-stage">
+          <svg id="arcDemo" viewBox="0 0 460 330" role="img" aria-label="Interactive preview of prompt placement on the arc.">
+            <g id="arcGuides"></g>
+            <g id="arcPrompts"></g>
+          </svg>
+        </div>
+        <div class="demo-ctrl">
+          <h4>What this target offers</h4>
+          <ul class="demo-list" id="demoList"></ul>
+          <div class="demo-add">
+            <button type="button" id="addAction">+ interaction</button>
+            <button type="button" id="addSpacer">+ spacer</button>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="dRadius">Distance from target</label><output id="oRadius">120</output></div>
+            <input type="range" id="dRadius" min="40" max="180" step="1" value="120">
+            <span class="prop">ArcRadiusPx</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="dSweep">Spread across arc</label><output id="oSweep">180°</output></div>
+            <input type="range" id="dSweep" min="20" max="360" step="1" value="180">
+            <span class="prop">ArcSweepDeg</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="dCentre">Arc centred at</label><output id="oCentre">90°</output></div>
+            <input type="range" id="dCentre" min="-180" max="180" step="1" value="90">
+            <span class="prop">ArcCentreAngleDeg</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="dHeight">Height above target</label><output id="oHeight">0</output></div>
+            <input type="range" id="dHeight" min="-120" max="120" step="1" value="0">
+            <span class="prop">ArcHeightOffsetPx</span>
+          </div>
+          <button class="demo-reset" type="button" id="demoReset">Reset to defaults</button>
+        </div>
+      </div>
+
+      <p class="note col">
+        Zero degrees is right and angles increase anticlockwise, so the 90° default puts the arc
+        overhead. A prompt past a quarter turn is on the left half, where its text runs the other way so
+        the words point away from the thing they belong to &mdash; drag the centre past 90° and watch
+        the labels flip. Buttons drawn with a ring are the holdable ones, and a dashed circle is a
+        <strong>spacer</strong> &mdash; it takes a place on the arc and draws nothing in game, which is
+        how the real prompts get pushed apart. Reorder the list to see where a gap lands.
+      </p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Setting</th><th>Default</th><th>Range</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>ArcRadiusPx</code></td><td class="num">120</td><td class="num">1+</td><td>How far each button sits from the target. The arc places the <em>button</em>, not the whole prompt, so a long label never drags its glyph off the ring</td></tr>
+            <tr><td><code>ArcSweepDeg</code></td><td class="num">180</td><td class="num">1–360</td><td>Total spread. Prompts are spaced end to end, so the first and last sit exactly on the ends</td></tr>
+            <tr><td><code>ArcCentreAngleDeg</code></td><td class="num">90</td><td class="num">-360–360</td><td>Where the middle of the arc points. The sweep is centred on it, never grown from it</td></tr>
+            <tr><td><code>ArcHeightOffsetPx</code></td><td class="num">0</td><td class="num">-500–500</td><td>Lifts the whole arc clear of the target. Positive is up</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="shell">
+    <span>Lifted from the BRIAR-435 Contextual Interactions plan. In the editor the same values live under Window → R16 Tools → Interaction Debug.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var svg = document.getElementById("arcDemo");
+  if (!svg) { return; }
+
+  var NS = "http://www.w3.org/2000/svg";
+  var CX = 230, CY = 190;
+  var DEFAULTS = { radius: 120, sweep: 180, centre: 90, height: 0 };
+  var state = { radius: 120, sweep: 180, centre: 90, height: 0 };
+
+  // The arc is laid out from the list below, spacers included: a spacer is placed exactly like an
+  // interaction and simply draws nothing, which is the whole of how it works in game too.
+  var POOL = [
+    { name: "Pick Up", key: "F", hold: false },
+    { name: "Destroy", key: "G", hold: true },
+    { name: "Quick Throw", key: "H", hold: true },
+    { name: "Examine", key: "J", hold: false },
+    { name: "Read", key: "K", hold: false }
+  ];
+  var DEFAULT_ITEMS = [
+    { kind: "action", pool: 0 },
+    { kind: "action", pool: 1 },
+    { kind: "spacer" },
+    { kind: "action", pool: 2 }
+  ];
+  var items = DEFAULT_ITEMS.map(function (i) { return { kind: i.kind, pool: i.pool }; });
+
+  var guides = document.getElementById("arcGuides");
+  var prompts = document.getElementById("arcPrompts");
+
+  function el(name, attrs, text) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) { n.setAttribute(k, attrs[k]); }
+    if (text !== undefined) { n.textContent = text; }
+    return n;
+  }
+
+  // Mirrors FR16ArcLayout: zero is right, angles increase anticlockwise, screen y runs down.
+  function pointAt(deg, radius, height) {
+    var r = deg * Math.PI / 180;
+    return { x: CX + radius * Math.cos(r), y: CY - radius * Math.sin(r) - height };
+  }
+
+  function wrap360(deg) { var w = deg % 360; return w < 0 ? w + 360 : w; }
+  function isLeftOfCentre(deg) { var w = wrap360(deg); return w > 90 && w < 270; }
+
+  function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
+
+  function render() {
+    clear(guides);
+    clear(prompts);
+
+    var startDeg = state.centre - state.sweep / 2;
+
+    // Sampled rather than drawn as one arc path, so any sweep up to a full turn works.
+    var d = "";
+    for (var i = 0; i <= 96; i++) {
+      var p = pointAt(startDeg + state.sweep * (i / 96), state.radius, state.height);
+      d += (i === 0 ? "M" : "L") + p.x.toFixed(1) + " " + p.y.toFixed(1);
+    }
+    guides.appendChild(el("path", { "class": "dtrack", d: d }));
+
+    guides.appendChild(el("line", {
+      x1: CX, y1: CY, x2: CX, y2: CY - state.height,
+      stroke: "var(--hairline-str)", "stroke-width": 1, "stroke-dasharray": "2 2"
+    }));
+    guides.appendChild(el("circle", { cx: CX, cy: CY, r: 4, fill: "var(--accent)" }));
+    guides.appendChild(el("text", {
+      x: CX, y: CY + 20, "text-anchor": "middle", "class": "gsub", fill: "var(--ink-soft)"
+    }, "target"));
+
+    var count = items.length;
+    for (var n = 0; n < count; n++) {
+      var item = items[n];
+      var frac = count === 1 ? 0.5 : n / (count - 1);
+      var deg = startDeg + state.sweep * frac;
+      var pt = pointAt(deg, state.radius, state.height);
+      var left = isLeftOfCentre(deg);
+      var g = el("g", {});
+
+      if (item.kind === "spacer") {
+        // Dashed and unlabelled: it occupies its place and shows nothing a player would read.
+        g.appendChild(el("circle", {
+          cx: pt.x, cy: pt.y, r: 9, fill: "none",
+          stroke: "var(--accent)", "stroke-width": 1.6,
+          "stroke-dasharray": "3 2.5", opacity: ".8"
+        }));
+        prompts.appendChild(g);
+        continue;
+      }
+
+      var act = POOL[item.pool] || POOL[0];
+      if (act.hold) {
+        g.appendChild(el("circle", { cx: pt.x, cy: pt.y, r: 15, "class": "dring", opacity: ".85" }));
+      }
+      g.appendChild(el("rect", { x: pt.x - 10, y: pt.y - 10, width: 20, height: 20, rx: 4, "class": "dcap" }));
+      g.appendChild(el("text", { x: pt.x, y: pt.y + 4, "text-anchor": "middle", "class": "dcap-txt" }, act.key));
+      g.appendChild(el("text", {
+        x: pt.x + (left ? -21 : 21), y: pt.y + 4,
+        "text-anchor": left ? "end" : "start", "class": "dlbl"
+      }, act.name));
+      prompts.appendChild(g);
+    }
+
+    renderList();
+  }
+
+  var listEl = document.getElementById("demoList");
+
+  function rowButton(label, title, fn) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener("click", fn);
+    return b;
+  }
+
+  function renderList() {
+    if (!listEl) { return; }
+    listEl.textContent = "";
+    items.forEach(function (item, index) {
+      var row = document.createElement("li");
+      var isSpacer = item.kind === "spacer";
+      if (isSpacer) { row.className = "is-spacer"; }
+
+      var label = document.createElement("span");
+      label.className = "lbl";
+      label.textContent = isSpacer ? "spacer" : (POOL[item.pool] || POOL[0]).name;
+      row.appendChild(label);
+
+      if (!isSpacer && (POOL[item.pool] || POOL[0]).hold) {
+        var tag = document.createElement("span");
+        tag.className = "hold";
+        tag.textContent = "hold";
+        row.appendChild(tag);
+      }
+
+      row.appendChild(rowButton("↑", "Move up", function () {
+        if (index === 0) { return; }
+        items.splice(index - 1, 0, items.splice(index, 1)[0]);
+        render();
+      }));
+      row.appendChild(rowButton("↓", "Move down", function () {
+        if (index === items.length - 1) { return; }
+        items.splice(index + 1, 0, items.splice(index, 1)[0]);
+        render();
+      }));
+      row.appendChild(rowButton("×", "Remove", function () {
+        items.splice(index, 1);
+        render();
+      }));
+
+      listEl.appendChild(row);
+    });
+  }
+
+  var SLIDERS = [
+    ["dRadius", "oRadius", "radius", ""],
+    ["dSweep", "oSweep", "sweep", "°"],
+    ["dCentre", "oCentre", "centre", "°"],
+    ["dHeight", "oHeight", "height", ""]
+  ];
+
+  SLIDERS.forEach(function (row) {
+    var input = document.getElementById(row[0]);
+    var out = document.getElementById(row[1]);
+    input.addEventListener("input", function () {
+      state[row[2]] = parseFloat(input.value);
+      out.textContent = input.value + row[3];
+      render();
+    });
+  });
+
+  document.getElementById("addAction").addEventListener("click", function () {
+    if (items.length >= 6) { return; }
+    // Cycles through the pool so a second Destroy does not appear before an Examine has.
+    var used = items.filter(function (i) { return i.kind === "action"; }).length;
+    items.push({ kind: "action", pool: used % POOL.length });
+    render();
+  });
+
+  document.getElementById("addSpacer").addEventListener("click", function () {
+    if (items.length >= 6) { return; }
+    items.push({ kind: "spacer" });
+    render();
+  });
+
+  document.getElementById("demoReset").addEventListener("click", function () {
+    for (var k in DEFAULTS) { state[k] = DEFAULTS[k]; }
+    SLIDERS.forEach(function (row) {
+      document.getElementById(row[0]).value = state[row[2]];
+      document.getElementById(row[1]).textContent = state[row[2]] + row[3];
+    });
+    items = DEFAULT_ITEMS.map(function (i) { return { kind: i.kind, pool: i.pool }; });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
